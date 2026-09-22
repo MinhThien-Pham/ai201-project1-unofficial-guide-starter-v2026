@@ -82,22 +82,62 @@ def fallback_split(
 
 def split_documents(documents: list[Document]) -> list[Chunk]:
     """
-    Split documents into chunks. ⚠️ REPLACE THE BODY OF THIS IN MILESTONE 3.
+    Split city guide documents at Markdown section boundaries.
 
-    Right now it just calls the fallback. That is the plain, generic behaviour
-    the brief is talking about.
-
-    When you write your own strategy, set `produced_by` to
-    "chunker.py::split_documents" so your README's Sample Chunks section names
-    the right function. `app.py chunks` prints that string for you.
-
-    Things worth thinking about before you write any code:
-      - Are your documents short posts or long guides?
-      - Is the useful information in one sentence, or spread over a paragraph?
-      - Would splitting on paragraph breaks keep more thoughts intact than
-        splitting on a character count?
+    Sections beginning with ## are kept intact whenever possible. Small
+    neighboring sections are packed together up to CHUNK_SIZE instead of
+    cutting the document at arbitrary character positions.
     """
-    return fallback_split(documents)
+    chunks: list[Chunk] = []
+
+    for doc in documents:
+        # First split the document into meaningful Markdown sections.
+        sections: list[str] = []
+        current_lines: list[str] = []
+
+        for line in doc.text.splitlines():
+            if line.startswith("## ") and current_lines:
+                section = "\n".join(current_lines).strip()
+                if section:
+                    sections.append(section)
+                current_lines = [line]
+            else:
+                current_lines.append(line)
+
+        if current_lines:
+            section = "\n".join(current_lines).strip()
+            if section:
+                sections.append(section)
+
+        # Pack neighboring complete sections together while staying near
+        # the configured chunk size.
+        packed: list[str] = []
+        current = ""
+
+        for section in sections:
+            candidate = section if not current else f"{current}\n\n{section}"
+
+            if not current or len(candidate) <= config.CHUNK_SIZE:
+                current = candidate
+            else:
+                packed.append(current)
+                current = section
+
+        if current:
+            packed.append(current)
+
+        # Turn the packed text into the Chunk objects used by the pipeline.
+        for index, text in enumerate(packed):
+            chunks.append(
+                Chunk(
+                    text=text,
+                    source=doc.source,
+                    index=index,
+                    produced_by="chunker.py::split_documents",
+                )
+            )
+
+    return chunks
 
 
 def describe(chunks: list[Chunk]) -> str:
