@@ -25,6 +25,10 @@ contains the answer.
 **Why this target:**
 <!-- e.g. "One of my questions is about a topic only two documents mention, so
      I expect that one to be hard." -->
+I chose 4 of 5 because my city guide corpus contains both town-specific guides
+and regional guides that discuss some of the same topics. Semantic retrieval
+may rank a related regional section above the exact town section for one
+question, so I expect strong retrieval without assuming it will be perfect.
 
 ---
 
@@ -35,6 +39,10 @@ Every answer the system produces names at least one source document.
 **Why this target:**
 <!-- Why all five and not four? What about your setup makes that achievable —
      or what would have to go wrong for it not to be? -->
+I chose every answer because each retrieved chunk already keeps its source
+filename, and the generation prompt explicitly tells the model to name the
+document it used. If the system produces an answer without a source, the
+grounding behavior is not working as designed.
 
 ---
 
@@ -52,6 +60,10 @@ in at least 4 of 5 tries.
 **Why this target:**
 <!-- What did your distances look like when you set the cutoff in Milestone 4?
      Was there a clean gap, or did the two groups overlap? -->
+I chose 4 of 5 because semantic retrieval can still find a superficially
+similar chunk for an unrelated question. I want the gate to reject nearly all
+clearly unsupported questions, while allowing for one borderline similarity
+case rather than setting a cutoff so strict that valid questions are rejected.
 
 ---
 
@@ -68,12 +80,16 @@ in at least 4 of 5 tries.
           sentence cut in half at either end."
        - "No chunk is shorter than 200 characters, since anything below that
           in my corpus turned out to be a heading with no content under it." -->
-
-
+At least 4 of 5 sampled chunks contain no sentence that is cut off at either
+the beginning or the end of the chunk.
 
 **Why this target:**
-
-
+The city_guides documents are organized into labelled sections such as
+"Getting there," "Eat and drink," and "When to go." The starter's fixed
+800-character windows ignore those boundaries and produced chunks as short as
+24 characters, so I want my chunker to keep complete sentences together.
+I chose 4 of 5 because an unusually long section may still need to be split,
+but most sampled chunks should remain readable on their own.
 
 ---
 
@@ -87,11 +103,15 @@ in at least 4 of 5 tries.
      present — anything, as long as it names a number or an observable
      outcome. -->
 
-
+For all 5 of my test questions, at least one source document named in the
+answer contains the fact used to answer the question.
 
 **Why this target:**
 
-
+Source citation is only useful if the cited document actually supports the
+answer. Since this is a RAG system and each retrieved chunk preserves its
+filename, I expect all five answers to point to a document where the claimed
+fact can be verified.
 
 ---
 
