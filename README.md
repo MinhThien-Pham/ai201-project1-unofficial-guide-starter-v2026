@@ -21,11 +21,12 @@ Minh Thien Pham — corpus: `city_guides`
 
 ## What This Does
 
-<!-- Three or four sentences. Which corpus you picked, and the kinds of
-     questions your system answers. Write it for someone who has never seen
-     this repo.
-
-     Milestone 5. -->
+This project builds a retrieval-augmented generation (RAG) system over the
+`city_guides` corpus. It answers factual questions about transportation, food,
+opening hours, walking, and other practical information found in the guides.
+The system retrieves relevant document chunks, checks them with a relevance
+gate, and only sends supported questions to the language model. Generated
+answers are grounded in the retrieved documents and name their source files.
 
 ## Chunking Strategy
 
@@ -129,26 +130,36 @@ year-round.
      visible. Milestone 4. -->
 
 **Question:**
+How often do buses run from Brightwater to Kestrelford on Saturdays?
 
 **Answer:**
 
 ```
+Based on the documents, buses run from Brightwater to Kestrelford every two hours on Saturdays (*guide_regional_transport.md* and *guide_kestrelford.md*).
+
+Sources retrieved: guide_brightwater.md, guide_kestrelford.md, guide_regional_transport.md, guide_walking.md
 ```
 
-**My relevance cutoff:**
+**My relevance cutoff:** `0.62`
 
-<!-- The number you set in config.py, and how you got there.
-
-     You ran five questions your corpus covers and the five in OUT_OF_SCOPE
-     that it clearly doesn't, and wrote down the best distance for each. What
-     did those two groups look like? Where was the gap? Put the actual numbers
-     here — the table below wants all ten rows.
-
-     Milestone 4. -->
+The highest best-distance among my five in-corpus questions was `0.4171`, while
+the lowest best-distance among the five out-of-scope questions was `0.8284`.
+That left a clear gap of `0.4113`. I chose `0.62`, which is close to the
+midpoint of that gap, so the gate has room on both sides between supported and
+unsupported questions.
 
 | Question | In corpus? | Best distance |
 |---|---|---|
-|  |  |  |
+| How often do buses run from Brightwater to Kestrelford on Saturdays? | Yes | 0.2175 |
+| What time does Kestrelford's bakery usually sell out? | Yes | 0.4171 |
+| Where can visitors find cheaper food than Brightwater's riverside strip? | Yes | 0.3605 |
+| What time do Brightwater's local buses stop running? | Yes | 0.2980 |
+| How many train services run between Brightwater and the regional hub on weekdays? | Yes | 0.2924 |
+| What is the capital of Mongolia? | No | 0.8284 |
+| How do I change the oil in a diesel engine? | No | 0.9124 |
+| Who won the 1994 World Cup? | No | 0.9999 |
+| What is the recommended dosage of ibuprofen for a headache? | No | 0.8459 |
+| How do I write a for loop in Rust? | No | 0.8434 |
 
 ## How I Used AI
 
@@ -161,9 +172,18 @@ year-round.
 
      Milestone 5. -->
 
-**1.**
+**1.** I asked Claude to help me inspect the starter chunking behavior and
+compare it with a strategy that better matched the structure of `city_guides`.
+It suggested using the Markdown `##` headings as semantic boundaries. I then
+checked the actual baseline chunks and changed the implementation to split on
+section boundaries and pack neighboring complete sections up to 750 characters.
 
-**2.**
+**2.** I asked Claude to help me interpret the retrieval distances from my five
+in-corpus questions and five out-of-scope questions. It identified the highest
+in-corpus distance as 0.4171 and the lowest out-of-scope distance as 0.8284.
+I used those measured results to choose a relevance cutoff of 0.62 and then
+verified it by testing both a supported question and an unsupported Rust
+question.
 
 <!-- ── Stretch features ─────────────────────────────────────────────────────
      Doing one? Say so here BEFORE you start. A feature this README never
