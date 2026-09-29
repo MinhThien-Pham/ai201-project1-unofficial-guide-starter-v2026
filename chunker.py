@@ -109,22 +109,8 @@ def split_documents(documents: list[Document]) -> list[Chunk]:
             if section:
                 sections.append(section)
 
-        # Pack neighboring complete sections together while staying near
-        # the configured chunk size.
-        packed: list[str] = []
-        current = ""
-
-        for section in sections:
-            candidate = section if not current else f"{current}\n\n{section}"
-
-            if not current or len(candidate) <= config.CHUNK_SIZE:
-                current = candidate
-            else:
-                packed.append(current)
-                current = section
-
-        if current:
-            packed.append(current)
+        # Keep each Markdown section as its own chunk.
+        packed = sections
 
         # Turn the packed text into the Chunk objects used by the pipeline.
         for index, text in enumerate(packed):
