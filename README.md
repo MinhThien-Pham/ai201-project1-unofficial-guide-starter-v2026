@@ -230,7 +230,7 @@ Produced by `run_eval.py::main`, using retrieval from `store.py::search` and chu
 
 For the Brightwater bus question, retrieval returned `guide_brightwater.md#0` instead of the chunk containing the `7pm` answer:
 
-```text
+```
 1   0.2980   guide_regional_transport.md
 2   0.3240   guide_brightwater.md   # Brightwater...
 ```
@@ -239,13 +239,13 @@ For the Brightwater bus question, retrieval returned `guide_brightwater.md#0` in
 
 Brightwater bus question, Run 1:
 
-```text
+```
 Based on the provided documents, there is no mention of what time Brightwater's local buses stop running. Therefore, I do not have enough information to answer the question.
 ```
 
 **Criterion 3**
 
-```text
+```
 gate refused 5 of 5
 ```
 
@@ -253,7 +253,7 @@ gate refused 5 of 5
 
 Sample output from `chunker.py::split_documents`:
 
-```text
+```
 ## Getting around
 
 Nothing within the valley is walkable from anything else — the villages are two to four miles apart. There is one taxi, based in the largest village, and it must be booked a day ahead. Most visitors drive between villages and walk the footpaths in between.
@@ -267,7 +267,7 @@ One pub in the largest village serves food seven days a week. A second, in the t
 
 Brightwater bus question, Run 2:
 
-```text
+```
 I do not have enough information to answer what time Brightwater's local buses stop running (source: guide_brightwater.md, guide_regional_transport.md, guide_kestrelford.md, guide_marchwood.md).
 ```
 
@@ -325,9 +325,9 @@ The Brightwater local bus question asks what time the buses stop running. The an
 
 ## The Improvement
 
-**What I changed:**
+**What I changed:** I changed the chunking strategy so each Markdown `##` section becomes its own chunk instead of packing neighboring sections together.
 
-**Why I picked it:**
+**Why I picked it:** The Brightwater bus answer is in the `## Getting around` section, but that section was packed together with `## Eat and drink` and was not retrieved in the top results.
 
 <!-- Connect it to a specific diagnosis above in one sentence. If you can't,
      you picked a fix because it sounded impressive. -->
@@ -339,11 +339,53 @@ The Brightwater local bus question asks what time the buses stop running. The an
 
 | Criterion | Target | Run 1 | Run 2 | Run 3 | Verdict |
 |---|---|---|---|---|---|
-| 1. Retrieved chunk contains the answer | 4 of 5 |  |  |  |  |
-| 2. Every answer names a source | 5 of 5 |  |  |  |  |
-| 3. Gate stops out-of-corpus questions | 4 of 5 |  |  |  |  |
-| 4. | | | | | |
-| 5. | | | | | |
+| 1. Retrieved chunk contains the answer | 4 of 5 | 4/5 | 4/5 | 4/5 | MET |
+| 2. Every answer names a source | 5 of 5 | 4/5 | 4/5 | 4/5 | MISSED |
+| 3. Gate stops out-of-corpus questions | 4 of 5 | 5/5 | 5/5 | 5/5 | MET |
+| 4. Sampled chunks contain no cut-off sentence | 4 of 5 | 5/5 | 5/5 | 5/5 | MET |
+| 5. Named source contains the supporting fact | 5 of 5 | 4/5 | 4/5 | 4/5 | MISSED |
+
+### Real Output — After
+
+Produced by `run_eval.py::main`, using retrieval from `store.py::search` and chunks from `chunker.py::split_documents`.
+
+**Criterion 1**
+
+Four of five questions retrieved the expected answer.
+```
+1   0.2562   guide_kestrelford.md
+2   0.2816   guide_marchwood.md
+3   0.2913   guide_regional_transport.md
+4   0.3332   guide_givens_mill.md
+5   0.3556   guide_thornby_wells.md
+```
+
+**Criterion 2**
+
+Brightwater bus question, Run 1:
+
+```
+Based on the provided documents, there is no mention of the time that Brightwater's local buses stop running. Therefore, I do not have enough information to answer your question.
+```
+
+**Criterion 3**
+```
+gate refused 5 of 5
+```
+
+**Criterion 4**
+Sample output from chunker.py::split_documents:
+```
+## When to go
+
+Late spring and early autumn. The Saturday market runs year-round but is much reduced from November to February. August is busy with walkers. The single-track approach road is genuinely difficult in snow and the town can be cut off for a day or two most winters.
+```
+
+**Criterion 5**
+Brightwater bus question, Run 2:
+```
+I do not have enough information to answer what time Brightwater's local buses stop running.
+```
 
 **Did it help?**
 
@@ -353,6 +395,8 @@ The Brightwater local bus question asks what time the buses stop running. The an
      tell.
 
      Milestone 4. -->
+
+No. The Brightwater bus question still did not retrieve the chunk containing `7pm`. Criterion 2 also remained missed because the Brightwater answers did not name a source in any of the three runs.
 
 ## What's Still Broken
 
@@ -364,9 +408,17 @@ The Brightwater local bus question asks what time the buses stop running. The an
 
      Milestone 5. -->
 
+Criterion 2 is still missed because the Brightwater bus answers do not consistently name a source. I would next tighten the generation prompt to require a source even when it cannot answer.
+
+Criterion 5 is still missed because the correct Brightwater chunk containing `7pm` is not retrieved. I would next try a different retrieval strategy, such as hybrid semantic and keyword search.
+
+I stopped after one improvement because this unit asks for one change to be tested and measured.
+
 ## What I'd Do Differently
 
 <!-- Knowing what you know now — which of your five criteria would you write
      differently, and why?
 
      Milestone 5. -->
+
+I would rewrite Criterion 5 to directly measure whether the generated answer contains the expected fact and cites a source that supports it. That would make answer correctness and source support easier to evaluate together.
