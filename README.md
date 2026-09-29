@@ -212,15 +212,66 @@ question.
 
 | Criterion | Target | Run 1 | Run 2 | Run 3 | Verdict |
 |---|---|---|---|---|---|
-| 1. Retrieved chunk contains the answer | 4 of 5 |  |  |  |  |
-| 2. Every answer names a source | 5 of 5 |  |  |  |  |
-| 3. Gate stops out-of-corpus questions | 4 of 5 |  |  |  |  |
-| 4. | | | | | |
-| 5. | | | | | |
+| 1. Retrieved chunk contains the answer | 4 of 5 | 4/5 | 4/5 | 4/5 | MET |
+| 2. Every answer names a source | 5 of 5 | 4/5 | 5/5 | 5/5 | MISSED |
+| 3. Gate stops out-of-corpus questions | 4 of 5 | 5/5 | 5/5 | 5/5 | MET |
+| 4. Sampled chunks contain no cut-off sentence | 4 of 5 | 5/5 | 5/5 | 5/5 | MET |
+| 5. Named source contains the supporting fact | 5 of 5 | 4/5 | 4/5 | 4/5 | MISSED |
 
 <!-- Underneath, paste the REAL output for each criterion from one of your
      runs — the actual text your system produced, not a description of it.
      Name the file and function that produced it. -->
+
+Real Output
+
+Produced by `run_eval.py::main`, using retrieval from `store.py::search` and chunks from `chunker.py::split_documents`.
+
+**Criterion 1**
+
+For the Brightwater bus question, retrieval returned `guide_brightwater.md#0` instead of the chunk containing the `7pm` answer:
+
+```text
+1   0.2980   guide_regional_transport.md
+2   0.3240   guide_brightwater.md   # Brightwater...
+```
+
+**Criterion 2**
+
+Brightwater bus question, Run 1:
+
+```text
+Based on the provided documents, there is no mention of what time Brightwater's local buses stop running. Therefore, I do not have enough information to answer the question.
+```
+
+**Criterion 3**
+
+```text
+gate refused 5 of 5
+```
+
+**Criterion 4**
+
+Sample output from `chunker.py::split_documents`:
+
+```text
+## Getting around
+
+Nothing within the valley is walkable from anything else — the villages are two to four miles apart. There is one taxi, based in the largest village, and it must be booked a day ahead. Most visitors drive between villages and walk the footpaths in between.
+
+## Eat and drink
+
+One pub in the largest village serves food seven days a week. A second, in the third village, opens Thursday to Sunday. There is a farm shop at the valley mouth that sells bread, cheese and little else, and it closes at 4pm. Bring supplies; this is not a place with options.
+```
+
+**Criterion 5**
+
+Brightwater bus question, Run 2:
+
+```text
+I do not have enough information to answer what time Brightwater's local buses stop running (source: guide_brightwater.md, guide_regional_transport.md, guide_kestrelford.md, guide_marchwood.md).
+```
+
+The expected answer was `7pm`.
 
 ## Verdicts
 
@@ -235,11 +286,11 @@ question.
 
 | # | Criterion | Verdict | How I decided |
 |---|---|---|---|
-| 1 |  |  |  |
-| 2 |  |  |  |
-| 3 |  |  |  |
-| 4 |  |  |  |
-| 5 |  |  |  |
+| 1 | Retrieved chunks contain the answer | MET | Four of five questions retrieved a chunk containing the expected answer, meeting the target. |
+| 2 | Every answer names a source | MISSED | One answer in Run 1 did not name a source, so the 5-of-5 target did not hold across all runs. |
+| 3 | Gate stops out-of-corpus questions | MET | The gate refused all five out-of-scope questions. |
+| 4 | Sampled chunks contain no cut-off sentence | MET | All five sampled chunks contained complete sentences. |
+| 5 | Named source contains the supporting fact | MISSED | The Brightwater bus question failed to return the expected `7pm` answer in all three runs. |
 
 ## Diagnoses
 
@@ -260,6 +311,17 @@ question.
      low, and which one you'd tighten and to what.
 
      Milestone 3. -->
+### Criterion 2 — Every answer names a source
+
+**Stage:** Generation
+
+Criterion 2 was missed because the first run of the Brightwater local bus question did not name a source document. Runs 2 and 3 did name sources, so source attribution was not consistent across all three runs.
+
+### Criterion 5 — Named source contains the supporting fact
+
+**Stage:** Retrieval
+
+The Brightwater local bus question asks what time the buses stop running. The answer, 7pm, is in `guide_brightwater.md#1`, but semantic retrieval returned `guide_brightwater.md#0` instead. Because the chunk containing the answer was not retrieved, the generation stage did not receive the information needed to answer correctly.
 
 ## The Improvement
 
